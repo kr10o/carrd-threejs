@@ -1,239 +1,314 @@
-<style>
-  /* Scoped strictly to #carrd-app-root to protect Carrd global styles */
-  #carrd-app-root.fashion-mercury-hero {
-    --hg-bg-0: #050507;
-    --hg-bg-1: #0d0e12;
-    --hg-border: rgba(255, 255, 255, 0.14);
-    --hg-text: #f3f4f6;
-    --hg-muted: rgba(243, 244, 246, 0.58);
-    --hg-accent: #e2e8f0;
-    position: relative;
-    width: 100%;
-    height: min(82vh, 760px);
-    min-height: 480px;
-    background: radial-gradient(circle at 50% 42%, #171922 0%, var(--hg-bg-1) 48%, var(--hg-bg-0) 100%);
-    border: 1px solid var(--hg-border);
-    border-radius: 16px;
-    overflow: hidden;
-    user-select: none;
-    -webkit-user-select: none;
-    font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
-    color: var(--hg-text);
-    box-shadow: 0 28px 80px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.12);
-    box-sizing: border-box;
-  }
+/* ==========================================================================
+ * kr10o/carrd-threejs - style.css
+ * Served via: https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/style.css
+ * Scoped strictly to #carrd-app-root to protect Carrd global typography/layout
+ * ========================================================================== */
 
-  #carrd-app-root *,
-  #carrd-app-root *::before,
-  #carrd-app-root *::after {
-    box-sizing: border-box;
-  }
+#carrd-app-root.cmyk-halftone-hero {
+  --ht-paper: #faf6eb;
+  --ht-ink: #111318;
+  --ht-cyan: #00aeef;
+  --ht-magenta: #ec008c;
+  --ht-yellow: #fff200;
+  position: relative;
+  width: 100%;
+  height: min(82vh, 760px);
+  min-height: 480px;
+  background: var(--ht-paper);
+  border: 3px solid var(--ht-ink);
+  border-radius: 14px;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, sans-serif;
+  color: var(--ht-ink);
+  box-shadow: 10px 10px 0px var(--ht-ink);
+  box-sizing: border-box;
+}
 
-  /* Subtle ambient grid background */
-  #carrd-app-root.fashion-mercury-hero::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    background-image:
-      linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
-      linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
-    background-size: 48px 48px;
-    mask-image: radial-gradient(circle at 50% 50%, black 35%, transparent 85%);
-    -webkit-mask-image: radial-gradient(circle at 50% 50%, black 35%, transparent 85%);
-    pointer-events: none;
-    z-index: 1;
-  }
+#carrd-app-root *,
+#carrd-app-root *::before,
+#carrd-app-root *::after {
+  box-sizing: border-box;
+}
 
-  #carrd-app-root .mercury-canvas-stage {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    z-index: 2;
-    cursor: crosshair;
-    touch-action: none;
-  }
+#carrd-app-root .halftone-canvas-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 2;
+  cursor: grab;
+  touch-action: none;
+}
 
-  #carrd-app-root .mercury-canvas-stage canvas {
-    display: block;
-    width: 100% !important;
-    height: 100% !important;
-    outline: none;
-  }
+#carrd-app-root .halftone-canvas-stage:active {
+  cursor: grabbing;
+}
 
-  /* Loader */
-  #carrd-app-root .mercury-loader {
-    position: absolute;
-    inset: 0;
-    z-index: 10;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 14px;
-    background: rgba(5, 5, 7, 0.88);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: opacity 0.55s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.55s;
-  }
+#carrd-app-root .halftone-canvas-stage canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  outline: none;
+}
 
-  #carrd-app-root[data-state="ready"] .mercury-loader {
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-  }
+/* Loader Overlay */
+#carrd-app-root .halftone-loader {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  background: var(--ht-paper);
+  transition: opacity 0.45s ease, visibility 0.45s;
+}
 
-  #carrd-app-root .mercury-loader__spinner {
-    width: 38px;
-    height: 38px;
-    border-radius: 50%;
-    border: 2px solid rgba(255, 255, 255, 0.15);
-    border-top-color: #ffffff;
-    animation: mercurySpin 0.85s linear infinite;
-  }
+#carrd-app-root[data-state="ready"] .halftone-loader {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
 
-  #carrd-app-root .mercury-loader__text {
-    font-size: 11px;
-    letter-spacing: 0.22em;
-    text-transform: uppercase;
-    color: var(--hg-muted);
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-  }
+#carrd-app-root .halftone-loader__spinner {
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  border: 3px solid rgba(17, 19, 24, 0.18);
+  border-top-color: var(--ht-magenta);
+  border-right-color: var(--ht-cyan);
+  animation: halftoneSpin 0.75s linear infinite;
+}
 
-  @keyframes mercurySpin {
-    to { transform: rotate(360deg); }
-  }
+#carrd-app-root .halftone-loader__text {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--ht-ink);
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+}
 
-  /* HUD Overlay */
-  #carrd-app-root .mercury-hud {
-    position: absolute;
-    inset: 0;
-    z-index: 5;
-    pointer-events: none;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 20px 24px;
-  }
+@keyframes halftoneSpin {
+  to { transform: rotate(360deg); }
+}
 
-  #carrd-app-root .mercury-hud__top,
-  #carrd-app-root .mercury-hud__bottom {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 12px;
-    flex-wrap: wrap;
-  }
+/* Print Proof Export Toast */
+#carrd-app-root .halftone-toast {
+  position: absolute;
+  top: 76px;
+  right: 22px;
+  z-index: 8;
+  background: var(--ht-ink);
+  color: #ffffff;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: 2px solid #ffffff;
+  box-shadow: 4px 4px 0px var(--ht-magenta);
+  opacity: 0;
+  transform: translateY(-8px);
+  pointer-events: none;
+  transition: opacity 0.22s ease, transform 0.22s ease;
+}
 
-  #carrd-app-root .mercury-brand-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 9px;
-    padding: 7px 13px;
-    border-radius: 999px;
-    background: rgba(15, 17, 23, 0.72);
-    border: 1px solid var(--hg-border);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.16em;
-    text-transform: uppercase;
-  }
+#carrd-app-root .halftone-toast.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
 
-  #carrd-app-root .mercury-pulse-dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: #e2e8f0;
-    box-shadow: 0 0 10px #ffffff;
-  }
+/* Comic Press HUD */
+#carrd-app-root .halftone-hud {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px 22px;
+}
 
-  #carrd-app-root .mercury-controls {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    pointer-events: auto;
-    background: rgba(15, 17, 23, 0.72);
-    padding: 5px;
-    border-radius: 999px;
-    border: 1px solid var(--hg-border);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-  }
+#carrd-app-root .halftone-hud__top,
+#carrd-app-root .halftone-hud__bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
 
-  #carrd-app-root .mercury-btn {
-    appearance: none;
-    border: 1px solid transparent;
-    background: transparent;
-    color: var(--hg-muted);
-    font-size: 11px;
-    font-weight: 600;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    padding: 6px 12px;
-    border-radius: 999px;
-    cursor: pointer;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: all 0.2s ease;
-  }
+#carrd-app-root .halftone-brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 7px 14px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 2px solid var(--ht-ink);
+  box-shadow: 3px 3px 0px var(--ht-ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
 
-  #carrd-app-root .mercury-btn:hover {
-    color: #ffffff;
-    background: rgba(255, 255, 255, 0.07);
-  }
+#carrd-app-root .cmyk-dots {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
 
-  #carrd-app-root .mercury-btn.is-active {
-    color: #090a0d;
-    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
-    box-shadow: 0 2px 12px rgba(255, 255, 255, 0.25);
-  }
+#carrd-app-root .cmyk-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  border: 1px solid var(--ht-ink);
+}
 
-  #carrd-app-root .mercury-btn--icon {
-    padding: 6px 10px;
-  }
+#carrd-app-root .cmyk-dots .dot-c { background: var(--ht-cyan); }
+#carrd-app-root .cmyk-dots .dot-m { background: var(--ht-magenta); }
+#carrd-app-root .cmyk-dots .dot-y { background: var(--ht-yellow); }
+#carrd-app-root .cmyk-dots .dot-k { background: var(--ht-ink); }
 
-  #carrd-app-root .mercury-telemetry {
-    display: inline-flex;
-    align-items: center;
-    gap: 14px;
-    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-    font-size: 11px;
-    letter-spacing: 0.08em;
-    color: var(--hg-muted);
-    background: rgba(15, 17, 23, 0.65);
-    padding: 6px 12px;
-    border-radius: 8px;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-  }
+#carrd-app-root .halftone-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+  background: #ffffff;
+  padding: 5px 8px;
+  border-radius: 999px;
+  border: 2px solid var(--ht-ink);
+  box-shadow: 3px 3px 0px var(--ht-ink);
+  flex-wrap: wrap;
+}
 
-  #carrd-app-root .mercury-telemetry__item.is-hit {
-    color: #ffffff;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.5);
-  }
+#carrd-app-root .halftone-btn {
+  appearance: none;
+  border: 1.5px solid transparent;
+  background: transparent;
+  color: var(--ht-ink);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 5px 11px;
+  border-radius: 999px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+}
 
-  #carrd-app-root .mercury-hint {
-    font-size: 10px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--hg-muted);
-  }
+#carrd-app-root .halftone-btn:hover:not(:disabled) {
+  background: rgba(17, 19, 24, 0.08);
+}
 
-  @media (max-width: 768px) {
-    #carrd-app-root.fashion-mercury-hero {
-      height: 68vh;
-      min-height: 420px;
-    }
-    #carrd-app-root .mercury-hud {
-      padding: 14px;
-    }
-    #carrd-app-root .mercury-hint {
-      display: none;
-    }
-    #carrd-app-root .mercury-btn span {
-      display: none;
-    }
+#carrd-app-root .halftone-btn:disabled {
+  opacity: 0.5;
+  cursor: wait;
+}
+
+#carrd-app-root .halftone-btn.is-active {
+  background: var(--ht-yellow);
+  border-color: var(--ht-ink);
+  box-shadow: 2px 2px 0px var(--ht-ink);
+}
+
+#carrd-app-root .halftone-btn--icon {
+  padding: 5px 9px;
+}
+
+/* Export Snapshot Buttons */
+#carrd-app-root .halftone-export-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding-left: 6px;
+  border-left: 1.5px solid rgba(17, 19, 24, 0.2);
+}
+
+#carrd-app-root .halftone-btn--export {
+  background: var(--ht-ink);
+  color: #ffffff;
+  border-color: var(--ht-ink);
+}
+
+#carrd-app-root .halftone-btn--export:hover:not(:disabled) {
+  background: var(--ht-magenta);
+  border-color: var(--ht-ink);
+  color: #ffffff;
+  box-shadow: 2px 2px 0px var(--ht-ink);
+}
+
+#carrd-app-root .halftone-slider-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px;
+  border-left: 1.5px solid rgba(17, 19, 24, 0.2);
+  border-right: 1.5px solid rgba(17, 19, 24, 0.2);
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+
+#carrd-app-root .halftone-slider-wrap input[type="range"] {
+  width: 68px;
+  accent-color: var(--ht-magenta);
+  cursor: pointer;
+}
+
+#carrd-app-root .halftone-telemetry {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ht-ink);
+  background: #ffffff;
+  padding: 6px 12px;
+  border-radius: 8px;
+  border: 2px solid var(--ht-ink);
+  box-shadow: 3px 3px 0px var(--ht-ink);
+}
+
+#carrd-app-root .halftone-hint {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  background: var(--ht-yellow);
+  color: var(--ht-ink);
+  padding: 6px 11px;
+  border-radius: 6px;
+  border: 2px solid var(--ht-ink);
+  box-shadow: 3px 3px 0px var(--ht-ink);
+}
+
+@media (max-width: 860px) {
+  #carrd-app-root.cmyk-halftone-hero {
+    height: 68vh;
+    min-height: 420px;
   }
-</style>
+  #carrd-app-root .halftone-hud {
+    padding: 12px;
+  }
+  #carrd-app-root .halftone-hint {
+    display: none;
+  }
+  #carrd-app-root .halftone-btn span {
+    display: none;
+  }
+}
