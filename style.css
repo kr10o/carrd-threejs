@@ -1,12 +1,12 @@
 /* ==========================================================================
  * kr10o/carrd-threejs - style.css
  * Served via: https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/style.css
- * Locked 100vw x 100vh Hero Background with Dark Grey/Black base & Squircle View
+ * Locked 100vw x 100vh Hero Background | Dark Grey/Black | Squircle Main View
  * ========================================================================== */
 
-#carrd-app-root.manga-halftone-hero-bg {
+#carrd-app-root.tshirt-hero-bg {
   --bg-void: #0b0c10;
-  --bg-frame: #12141b;
+  --bg-stage: #121318;
   --squircle-radius: clamp(28px, 4.2vw, 56px);
   --frame-pad: clamp(10px, 1.4vw, 20px);
   position: relative;
@@ -36,37 +36,36 @@
   box-sizing: border-box;
 }
 
-/* Main Squircle Viewport Wrapper */
-#carrd-app-root .halftone-squircle-frame {
+#carrd-app-root .tshirt-squircle-frame {
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: var(--bg-frame);
+  background-color: var(--bg-stage);
   border-radius: var(--squircle-radius);
-  /* Progressive enhancement for native CSS squircle smoothing */
   corner-shape: squircle;
-  border: 1.5px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.07);
   box-shadow:
-    0 24px 70px rgba(0, 0, 0, 0.85),
-    inset 0 0 0 1px rgba(255, 255, 255, 0.04);
+    0 26px 75px rgba(0, 0, 0, 0.88),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
   overflow: hidden;
+  contain: strict;
   transform: translateZ(0);
 }
 
-#carrd-app-root .halftone-canvas-stage {
+#carrd-app-root .tshirt-canvas-stage {
   position: absolute;
   inset: 0;
   width: 100%;
   height: 100%;
   opacity: 0;
-  transition: opacity 1.1s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-#carrd-app-root[data-state="ready"] .halftone-canvas-stage {
+#carrd-app-root[data-state="ready"] .tshirt-canvas-stage {
   opacity: 1;
 }
 
-#carrd-app-root .halftone-canvas-stage canvas {
+#carrd-app-root .tshirt-canvas-stage canvas {
   display: block;
   width: 100% !important;
   height: 100% !important;

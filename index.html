@@ -1,47 +1,48 @@
-<div id="carrd-app-root" class="manga-halftone-hero-bg" data-state="loading" aria-hidden="true">
-  <div id="halftone-squircle-frame" class="halftone-squircle-frame">
-    <div id="halftone-canvas-stage" class="halftone-canvas-stage"></div>
+<div
+  id="carrd-app-root"
+  class="tshirt-hero-bg"
+  data-state="loading"
+  data-glb-url="https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/tshirt.glb"
+  data-glb-hanger="auto"
+  data-logo-front="https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/logo-front.png"
+  data-logo-front-scale="0.34"
+  data-logo-front-x="0.42"
+  data-logo-front-y="0.46"
+  data-logo-back="https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/logo-back.png"
+  data-logo-back-scale="1.18"
+  data-logo-back-x="0.0"
+  data-logo-back-y="0.18"
+  aria-hidden="true"
+>
+  <div class="tshirt-squircle-frame">
+    <div id="tshirt-canvas-stage" class="tshirt-canvas-stage"></div>
   </div>
 </div>
 
-<!-- External Stylesheet via jsDelivr GitHub CDN -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
+<link rel="preconnect" href="https://cdnjs.cloudflare.com" crossorigin />
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin />
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/style.css" crossorigin="anonymous" />
 
 <script>
 (function () {
   'use strict';
 
-  function loadCdnScript(url) {
-    return new Promise((resolve, reject) => {
-      if (document.querySelector(`script[src="${url}"]`)) return resolve();
-      const script = document.createElement('script');
-      script.src = url;
-      script.async = true;
-      script.crossOrigin = 'anonymous';
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error(`Failed to load script: ${url}`));
-      document.head.appendChild(script);
-    });
-  }
-
-  function loadCdnStyle(url) {
-    if (document.querySelector(`link[href="${url}"]`)) return;
-    const link = document.createElement('link');
-    link.rel = 'stylesheet';
-    link.href = url;
-    link.crossOrigin = 'anonymous';
-    document.head.appendChild(link);
-  }
-
-  async function bootMangaHeroBackground() {
-    loadCdnStyle('https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/style.css');
-    await loadCdnScript('https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/script.js');
+  function loadScript(src) {
+    if (document.querySelector('script[src="' + src + '"]')) return;
+    const s = document.createElement('script');
+    s.src = src;
+    s.async = true;
+    s.crossOrigin = 'anonymous';
+    document.head.appendChild(s);
   }
 
   if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', bootMangaHeroBackground);
+    document.addEventListener('DOMContentLoaded', function () {
+      loadScript('https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/script.js');
+    });
   } else {
-    bootMangaHeroBackground();
+    loadScript('https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/script.js');
   }
 })();
 </script>
