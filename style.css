@@ -172,7 +172,7 @@
     255,
     calc(0.08 + var(--ts-turn-velocity) * 0.35)
   );
-  transition: opacity cubic-bezier(0.19, 1, 0.22, 1) var(--ts-ease-out);
+  transition: opacity 0.10s var(--ts-ease-out);
 }
 
 #carrd-app-root .tshirt-canvas-stage {
