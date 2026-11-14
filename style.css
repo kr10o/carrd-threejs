@@ -63,23 +63,23 @@
 
   /* --- 2. High-Relief Cotton Texture & Studio Lighting Tokens --- */
   --ts-shirt-color: #f5f5f5;
-  --ts-shirt-roughness: 0.84;
+  --ts-shirt-roughness: 0.54;
   --ts-shirt-bump: 0.15;        /* Boosted 2.6x for deep heavyweight jersey relief */
-  --ts-collar-bump: 0.25;       /* Deep 1x1 rib collar texture */
-  --ts-knit-repeat: 76;         /* Tighter, sharper knit loop density */
+  --ts-collar-bump: 0.09;       /* Deep 1x1 rib collar texture */
+  --ts-knit-repeat: 160;         /* Tighter, sharper knit loop density */
   --ts-knit-cavity: 0.006;       /* Micro-shadow depth inside knit stitch pores */
   --ts-wall-color: #e4e1d8;
   --ts-wall-roughness: 3.5;
-  --ts-wall-bump: 1.35;
+  --ts-wall-bump: 0.35;
   --ts-sun-color: #ffe8c2;
-  --ts-sun-intensity: 0.85;
+  --ts-sun-intensity: 0.65;
   --ts-rim-color: #dcebff;
-  --ts-rim-intensity: 1.82;
+  --ts-rim-intensity: 0.62;
   --ts-hemi-intensity: 0.52;
-  --ts-fill-intensity: 0.40;
-  --ts-exposure: 0.95;
+  --ts-fill-intensity: 0.10;
+  --ts-exposure: 1;
   --ts-dof-blur: 6;
-  --ts-focal-range: 0.85;
+  --ts-focal-range: 0.55;
   --ts-ao-intensity: 1.25;
   --ts-print-roughness: 0.30;
   --ts-print-emboss: 0.50;
@@ -112,7 +112,7 @@
 
 /* Optional Full-Viewport Override if data-layout="fullscreen" is set */
 #carrd-app-root.tshirt-hero-bg[data-layout="fullscreen"] {
-  --ts-bg-void: #0b0c10;
+  --ts-bg-void: #b9b9b9;
   --ts-frame-pad: clamp(10px, 1.4vw, 20px);
   width: 100vw;
   height: 100vh;
@@ -121,8 +121,7 @@
   max-width: 100vw;
   max-height: 100vh;
   aspect-ratio: auto;
-  margin-left: calc(50% - 50vw);
-  margin-right: calc(50% - 50vw);
+  margin: calc(50% - 50vw);
 }
 
 #carrd-app-root *,
@@ -201,7 +200,7 @@
   outline: none;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 468px) {
   #carrd-app-root.tshirt-hero-bg {
     --ts-min-height: 300px;
     --ts-dof-blur: 6;
