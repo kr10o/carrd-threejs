@@ -44,8 +44,8 @@
   /* --- 1. Parent-Column Adaptive Layout & Squircle Tokens --- */
   --ts-bg-void: transparent;
   --ts-bg-stage: #dfdcd4;
-  --ts-min-height: 520px;
-  --ts-aspect-ratio: 4 / 5;
+  --ts-min-height: 400px;
+  --ts-aspect-ratio: 2 / 3;
   --ts-squircle-radius: clamp(20px, 2.8vw, 44px);
   --ts-frame-pad: 0px;
   --ts-frame-border-width: 1px;
@@ -56,26 +56,26 @@
   --ts-reveal-duration: 0.65s;
 
   /* --- 2. High-Relief Cotton Texture & Studio Lighting Tokens --- */
-  --ts-shirt-color: #1f2229;
+  --ts-shirt-color: #f5f5f5;
   --ts-shirt-roughness: 0.84;
-  --ts-shirt-bump: 1.65;        /* Boosted 2.6x for deep heavyweight jersey relief */
-  --ts-collar-bump: 2.25;       /* Deep 1x1 rib collar texture */
-  --ts-knit-repeat: 36;         /* Tighter, sharper knit loop density */
-  --ts-knit-cavity: 0.34;       /* Micro-shadow depth inside knit stitch pores */
+  --ts-shirt-bump: 2.65;        /* Boosted 2.6x for deep heavyweight jersey relief */
+  --ts-collar-bump: 1.55;       /* Deep 1x1 rib collar texture */
+  --ts-knit-repeat: 6;         /* Tighter, sharper knit loop density */
+  --ts-knit-cavity: 0.4;       /* Micro-shadow depth inside knit stitch pores */
   --ts-wall-color: #e4e1d8;
-  --ts-wall-roughness: 0.95;
-  --ts-wall-bump: 1.95;
+  --ts-wall-roughness: 2.5;
+  --ts-wall-bump: 0.95;
   --ts-sun-color: #ffe8c2;
   --ts-sun-intensity: 1.38;
   --ts-rim-color: #dcebff;
   --ts-rim-intensity: 0.82;
   --ts-hemi-intensity: 0.52;
-  --ts-fill-intensity: 0.40;
-  --ts-exposure: 1.02;
-  --ts-dof-blur: 14;
+  --ts-fill-intensity: 0.90;
+  --ts-exposure: 1.20;
+  --ts-dof-blur: 6;
   --ts-focal-range: 0.65;
   --ts-ao-intensity: 1.25;
-  --ts-print-roughness: 0.40;
+  --ts-print-roughness: 0.60;
   --ts-print-emboss: 1.10;
   --ts-knit-bleed: 0.72;
 
