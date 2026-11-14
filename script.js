@@ -1,12 +1,13 @@
 /* ==========================================================================
  * kr10o/carrd-threejs - script.js
  * Served via: https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/script.js
- * Fixes & Features:
- *   - Built-in ACES Filmic Tone Mapping + Linear-to-sRGB in Pass 2 DoF Shader
- *     (Eliminates FBO HDR white-out / clipping on live site)
- *   - Normalized Three.js r128 Studio Lighting & Soft Charcoal-Black Tee (#1e2026)
- *   - Instant First-Frame Procedural Render -> Seamless .GLB Swap on Load
- *   - Two-Way CSSOM Bridge (--ts-*), Baked AO (aoMap + uv2), & onClick 180° Flip
+ * Features:
+ *   1. Carrd Parent-Column Auto-Linker (stretches Carrd .embed wrapper & column
+ *      cell, and fits camera to both horizontal & vertical container bounds)
+ *   2. High-Relief Heavyweight Cotton Jersey Normal/Roughness Generator +
+ *      Shader-Level 3D Micro-Knit Relief & Stitch-Pore Cavity Occlusion
+ *   3. Two-Way CSSOM Bridge (--ts-*), Baked AO (aoMap + uv2), & onClick 180° Flip
+ *   4. 12-Tap Bilinear Golden-Angle Bokeh DoF + ACES Filmic Tone Mapping
  * ========================================================================== */
 (function () {
   'use strict';
@@ -44,17 +45,46 @@
     if (!window.THREE || !window.THREE.WebGLRenderer) {
       await loadCdnScript(CDN_LIBS.THREE);
     }
-    if (!window.THREE.DRACOLoader) {
-      await loadCdnScript(CDN_LIBS.DRACO_LOADER);
-    }
-    if (!window.THREE.GLTFLoader) {
-      await loadCdnScript(CDN_LIBS.GLTF_LOADER);
-    }
+    await Promise.all([
+      window.THREE.DRACOLoader ? Promise.resolve() : loadCdnScript(CDN_LIBS.DRACO_LOADER),
+      window.THREE.GLTFLoader ? Promise.resolve() : loadCdnScript(CDN_LIBS.GLTF_LOADER)
+    ]);
     return window.THREE;
   }
 
   /* ==========================================================================
-   * 1. CSS DOM API BRIDGE (Reads Normalized --ts-* CSS Tokens)
+   * 1. CARRD PARENT-COLUMN DOM LINKER
+   *    Ensures Carrd's <div id="embedXX"> wrapper and parent column cell
+   *    allow 100% width & height stretching without collapsing
+   * ========================================================================== */
+  function syncParentColumnLayout(rootEl) {
+    if (rootEl.getAttribute('data-layout') === 'fullscreen') return null;
+
+    const embedWrapper = rootEl.parentElement;
+    if (!embedWrapper || embedWrapper === document.body) return null;
+
+    /* Style Carrd's immediate .embed wrapper to fill its column cell */
+    embedWrapper.style.width = '100%';
+    embedWrapper.style.height = '100%';
+    embedWrapper.style.display = 'flex';
+    embedWrapper.style.flexDirection = 'column';
+    embedWrapper.style.flex = '1 1 auto';
+
+    /* If inside a Carrd multi-column cell (div.inner > div), allow flex stretch */
+    const columnCell = embedWrapper.parentElement;
+    if (columnCell && columnCell !== document.body && !columnCell.classList.contains('inner')) {
+      const colStyle = window.getComputedStyle(columnCell);
+      if (colStyle.display === 'block') {
+        columnCell.style.display = 'flex';
+        columnCell.style.flexDirection = 'column';
+      }
+    }
+
+    return columnCell || embedWrapper;
+  }
+
+  /* ==========================================================================
+   * 2. CSS DOM API BRIDGE (Reads Normalized --ts-* CSS Tokens)
    * ========================================================================== */
   function readCssTokens(rootEl) {
     const cs = window.getComputedStyle(rootEl);
@@ -69,33 +99,38 @@
 
     return {
       bgStage:        str('--ts-bg-stage', '#dfdcd4'),
-      shirtColor:     str('--ts-shirt-color', '#1e2026'),
-      shirtRoughness: num('--ts-shirt-roughness', 0.82),
+      shirtColor:     str('--ts-shirt-color', '#1f2229'),
+      shirtRoughness: num('--ts-shirt-roughness', 0.84),
+      shirtBump:      num('--ts-shirt-bump', 1.65),
+      collarBump:     num('--ts-collar-bump', 2.25),
+      knitRepeat:     num('--ts-knit-repeat', 36.0),
+      knitCavity:     num('--ts-knit-cavity', 0.34),
       wallColor:      str('--ts-wall-color', '#e4e1d8'),
       wallRoughness:  num('--ts-wall-roughness', 0.95),
       wallBump:       num('--ts-wall-bump', 1.95),
       sunColor:       str('--ts-sun-color', '#ffe8c2'),
-      sunIntensity:   num('--ts-sun-intensity', 1.35),
+      sunIntensity:   num('--ts-sun-intensity', 1.38),
       rimColor:       str('--ts-rim-color', '#dcebff'),
-      rimIntensity:   num('--ts-rim-intensity', 0.75),
-      hemiIntensity:  num('--ts-hemi-intensity', 0.55),
-      fillIntensity:  num('--ts-fill-intensity', 0.42),
+      rimIntensity:   num('--ts-rim-intensity', 0.82),
+      hemiIntensity:  num('--ts-hemi-intensity', 0.52),
+      fillIntensity:  num('--ts-fill-intensity', 0.40),
       exposure:       num('--ts-exposure', 1.02),
       dofBlur:        num('--ts-dof-blur', 14.0),
       focalRange:     num('--ts-focal-range', 0.65),
-      aoIntensity:    num('--ts-ao-intensity', 1.10),
+      aoIntensity:    num('--ts-ao-intensity', 1.25),
       printRoughness: num('--ts-print-roughness', 0.40),
-      printEmboss:    num('--ts-print-emboss', 0.98),
-      knitBleed:      num('--ts-knit-bleed', 0.64)
+      printEmboss:    num('--ts-print-emboss', 1.10),
+      knitBleed:      num('--ts-knit-bleed', 0.72)
     };
   }
 
   /* ==========================================================================
-   * 2. PROCEDURAL COTTON JERSEY WEAVE & ROUGH PLASTER TEXTURE GENERATORS
+   * 3. HIGH-RELIEF HEAVYWEIGHT COTTON JERSEY & PLASTER TEXTURE GENERATORS
+   *    Synthesizes deep interlocking V-stitch wales, twisted yarn micro-ridges,
+   *    and high-contrast stitch-pore roughness
    * ========================================================================== */
-  function createCottonJerseyTextures(THREE, maxAnisotropy) {
-    const size = 256;
-
+  function createCottonJerseyTextures(THREE, maxAnisotropy, repeatCount) {
+    const size = 128;
     const normCanvas = document.createElement('canvas');
     normCanvas.width = size;
     normCanvas.height = size;
@@ -111,8 +146,8 @@
     const rData = rImg.data;
 
     const twoPi = Math.PI * 2;
-    const freqX = 32;
-    const freqY = 48;
+    const freqX = 24;
+    const freqY = 36;
 
     for (let y = 0; y < size; y++) {
       const v = y / size;
@@ -120,25 +155,29 @@
         const u = x / size;
         const idx = (y * size + x) * 4;
 
+        /* Deep stockinette V-stitch loop + diagonal spun-yarn twist */
         const walePhase = u * freqX * twoPi;
-        const vChev = Math.abs(((u * freqX) % 1) - 0.5) * 1.65;
+        const vChev = Math.abs(((u * freqX) % 1) - 0.5) * 1.85;
         const coursePhase = (v * freqY + vChev) * twoPi;
+        const yarnTwist = (u * freqX * 2.0 + v * freqY * 2.0) * twoPi;
 
-        const nx = Math.cos(walePhase) * 0.45 + Math.sin(coursePhase) * 0.20;
-        const ny = Math.cos(coursePhase) * 0.48;
+        /* Boosted normal slopes (2.6x stronger than previous build) */
+        const nx = Math.cos(walePhase) * 1.18 + Math.sin(coursePhase) * 0.48 + Math.cos(yarnTwist) * 0.28;
+        const ny = Math.cos(coursePhase) * 1.22 + Math.sin(yarnTwist) * 0.26;
         const nz = 1.0;
-        const invLen = 1.0 / Math.hypot(nx, ny, nz);
+        const invLen = 1.0 / Math.sqrt(nx * nx + ny * ny + nz * nz);
 
         const hash = Math.sin(x * 12.9898 + y * 78.233) * 43758.5453;
-        const grain = (hash - Math.floor(hash) - 0.5) * 10;
+        const grain = (hash - Math.floor(hash) - 0.5) * 16;
 
         nData[idx]     = Math.min(255, Math.max(0, Math.round((nx * invLen * 0.5 + 0.5) * 255 + grain)));
         nData[idx + 1] = Math.min(255, Math.max(0, Math.round((ny * invLen * 0.5 + 0.5) * 255 + grain)));
         nData[idx + 2] = Math.round((nz * invLen * 0.5 + 0.5) * 255);
         nData[idx + 3] = 255;
 
-        const stitchDepth = (Math.sin(walePhase) * Math.sin(coursePhase)) * 18;
-        const rVal = Math.min(255, Math.max(180, Math.round(218 - stitchDepth + grain)));
+        /* High-contrast stitch crown vs pore roughness [145..252] */
+        const stitchCrown = Math.sin(walePhase) * Math.sin(coursePhase);
+        const rVal = Math.min(252, Math.max(142, Math.round(208 - stitchCrown * 48 + grain)));
         rData[idx] = rData[idx + 1] = rData[idx + 2] = rVal;
         rData[idx + 3] = 255;
       }
@@ -147,44 +186,37 @@
     nCtx.putImageData(nImg, 0, 0);
     rCtx.putImageData(rImg, 0, 0);
 
+    const repX = repeatCount || 36;
+    const repY = Math.round(repX * 1.18);
+
     const normalMap = new THREE.CanvasTexture(normCanvas);
     normalMap.wrapS = normalMap.wrapT = THREE.RepeatWrapping;
-    normalMap.repeat.set(22, 26);
+    normalMap.repeat.set(repX, repY);
     normalMap.anisotropy = maxAnisotropy;
 
     const roughnessMap = new THREE.CanvasTexture(roughCanvas);
     roughnessMap.wrapS = roughnessMap.wrapT = THREE.RepeatWrapping;
-    roughnessMap.repeat.set(22, 26);
+    roughnessMap.repeat.set(repX, repY);
     roughnessMap.anisotropy = maxAnisotropy;
 
     return { normalMap, roughnessMap };
   }
 
   function createRoughPlasterTextures(THREE, maxAnisotropy) {
-    const size = 256;
+    const size = 128;
     const heightField = new Float32Array(size * size);
-
     const twoPi = Math.PI * 2;
+
     for (let y = 0; y < size; y++) {
       const ny = y / size;
       for (let x = 0; x < size; x++) {
         const nx = x / size;
-
         const trowel =
           Math.sin(nx * twoPi * 3.0 + Math.cos(ny * twoPi * 2.0) * 1.4) * 0.35 +
-          Math.cos(ny * twoPi * 5.0 - Math.sin(nx * twoPi * 4.0) * 1.2) * 0.25 +
-          Math.sin((nx + ny) * twoPi * 9.0) * 0.15;
-
+          Math.cos(ny * twoPi * 5.0 - Math.sin(nx * twoPi * 4.0) * 1.2) * 0.25;
         const h1 = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
-        const gritFine = (h1 - Math.floor(h1)) - 0.5;
-
-        const gx = Math.floor(x * 0.5);
-        const gy = Math.floor(y * 0.5);
-        const h2 = Math.sin(gx * 269.5 + gy * 183.3) * 43758.5453;
-        const gritCoarse = (h2 - Math.floor(h2)) - 0.5;
-
-        const pore = gritCoarse < -0.32 ? -0.45 : 0.0;
-        heightField[y * size + x] = trowel + gritCoarse * 0.55 + gritFine * 0.38 + pore;
+        const grit = (h1 - Math.floor(h1)) - 0.5;
+        heightField[y * size + x] = trowel + grit * 0.65;
       }
     }
 
@@ -202,8 +234,7 @@
     const rImg = rCtx.createImageData(size, size);
     const rData = rImg.data;
 
-    const bumpStrength = 2.65;
-
+    const bumpStrength = 2.4;
     for (let y = 0; y < size; y++) {
       const yU = (y - 1 + size) % size;
       const yD = (y + 1) % size;
@@ -214,16 +245,14 @@
 
         const dX = (heightField[y * size + xL] - heightField[y * size + xR]) * bumpStrength;
         const dY = (heightField[yU * size + x] - heightField[yD * size + x]) * bumpStrength;
-        const dZ = 1.0;
-        const inv = 1.0 / Math.hypot(dX, dY, dZ);
+        const inv = 1.0 / Math.sqrt(dX * dX + dY * dY + 1.0);
 
-        nData[idx]     = Math.min(255, Math.max(0, Math.round((dX * inv * 0.5 + 0.5) * 255)));
-        nData[idx + 1] = Math.min(255, Math.max(0, Math.round((dY * inv * 0.5 + 0.5) * 255)));
-        nData[idx + 2] = Math.round((dZ * inv * 0.5 + 0.5) * 255);
+        nData[idx]     = Math.round((dX * inv * 0.5 + 0.5) * 255);
+        nData[idx + 1] = Math.round((dY * inv * 0.5 + 0.5) * 255);
+        nData[idx + 2] = Math.round((inv * 0.5 + 0.5) * 255);
         nData[idx + 3] = 255;
 
-        const hVal = heightField[y * size + x];
-        const rVal = Math.min(255, Math.max(210, Math.round(242 - hVal * 16)));
+        const rVal = Math.min(255, Math.max(210, Math.round(242 - heightField[y * size + x] * 16)));
         rData[idx] = rData[idx + 1] = rData[idx + 2] = rVal;
         rData[idx + 3] = 255;
       }
@@ -253,9 +282,9 @@
   }
 
   /* ==========================================================================
-   * 3. IMPORTED .GLB NORMALIZER + BAKED AMBIENT OCCLUSION (aoMap + uv2) BINDER
+   * 4. FAST IMPORTED .GLB NORMALIZER
    * ========================================================================== */
-  function prepareImportedGlbScene(THREE, gltfScene, torsoMaterial, aoIntensity, trackedFabricMaterials) {
+  function prepareImportedGlbScene(THREE, gltfScene, torsoMaterial, aoIntensity, trackedFabricMaterials, isPreNormalized) {
     const wrapper = new THREE.Group();
     gltfScene.updateMatrixWorld(true);
 
@@ -271,9 +300,11 @@
         return;
       }
 
-      const geom = child.geometry.clone();
+      const geom = child.geometry;
       const relMatrix = new THREE.Matrix4().multiplyMatrices(rootInverse, child.matrixWorld);
-      geom.applyMatrix4(relMatrix);
+      if (!relMatrix.equals(new THREE.Matrix4())) {
+        geom.applyMatrix4(relMatrix);
+      }
 
       let bakedAoTexture = null;
       if (child.material) {
@@ -301,45 +332,39 @@
       throw new Error('No garment mesh found in .glb');
     }
 
-    const combinedBox = new THREE.Box3();
-    fabricGeometries.forEach((g) => {
-      g.computeBoundingBox();
-      combinedBox.union(g.boundingBox);
-    });
+    if (!isPreNormalized) {
+      const combinedBox = new THREE.Box3();
+      fabricGeometries.forEach((g) => {
+        g.computeBoundingBox();
+        combinedBox.union(g.boundingBox);
+      });
 
-    const center = new THREE.Vector3();
-    const size = new THREE.Vector3();
-    combinedBox.getCenter(center);
-    combinedBox.getSize(size);
+      const center = new THREE.Vector3();
+      const size = new THREE.Vector3();
+      combinedBox.getCenter(center);
+      combinedBox.getSize(size);
 
-    const maxSpan = Math.max(size.y, size.x * 0.85, 0.001);
-    const normScale = 3.10 / maxSpan;
-    const targetCenterY = -0.10;
+      const maxSpan = Math.max(size.y, size.x * 0.85, 0.001);
+      if (Math.abs(maxSpan - 3.10) > 0.08 || center.length() > 0.25) {
+        const normScale = 3.10 / maxSpan;
+        const offsetX = -center.x * normScale;
+        const offsetY = -0.10 - center.y * normScale;
+        const offsetZ = -center.z * normScale;
 
-    const offsetX = -center.x * normScale;
-    const offsetY = targetCenterY - center.y * normScale;
-    const offsetZ = -center.z * normScale;
+        fabricGeometries.forEach((g) => {
+          g.scale(normScale, normScale, normScale);
+          g.translate(offsetX, offsetY, offsetZ);
+        });
+      }
+    }
 
     fabricMeshes.forEach((mesh) => {
       const g = mesh.geometry;
-      const pos = g.attributes.position;
-      for (let i = 0; i < pos.count; i++) {
-        pos.setXYZ(
-          i,
-          pos.getX(i) * normScale + offsetX,
-          pos.getY(i) * normScale + offsetY,
-          pos.getZ(i) * normScale + offsetZ
-        );
-      }
-      pos.needsUpdate = true;
-
       if (!g.attributes.normal) {
         g.computeVertexNormals();
-      } else {
-        g.normalizeNormals();
       }
-
       if (!g.attributes.uv) {
+        const pos = g.attributes.position;
         const uvs = new Float32Array(pos.count * 2);
         for (let i = 0; i < pos.count; i++) {
           const px = pos.getX(i);
@@ -352,13 +377,9 @@
         }
         g.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
       }
-
       if (!g.attributes.uv2 && g.attributes.uv) {
         g.setAttribute('uv2', g.attributes.uv);
       }
-
-      g.computeBoundingBox();
-      g.computeBoundingSphere();
       wrapper.add(mesh);
     });
 
@@ -366,9 +387,9 @@
   }
 
   /* ==========================================================================
-   * 4. PROCEDURAL FALLBACK HEAVYWEIGHT T-SHIRT (HANGER-FREE)
+   * 5. LIGHTWEIGHT PROCEDURAL FALLBACK T-SHIRT
    * ========================================================================== */
-  function buildProceduralFallbackTShirt(THREE, torsoMaterial, sleeveMaterial, collarMaterial) {
+  function buildProceduralFallbackTShirt(THREE, torsoMaterial, sleeveMaterial) {
     const group = new THREE.Group();
 
     function evaluateTorsoPoint(u, v, isFront) {
@@ -397,20 +418,18 @@
         : (0.30 + 0.07 * Math.sin(v * Math.PI * 0.88));
 
       const foldPrimary = Math.sin((u * 5.8) + (isFront ? 0.25 : -0.35)) * 0.028 * (1.0 - v * 0.35);
-      const foldSecondary = Math.cos(u * 12.0 - v * 2.4) * 0.014 * (1.0 - v * 0.25);
-      const panelRipple = Math.sin(u * 8.5 + v * 3.0) * 0.011 * Math.sin(v * Math.PI);
       const catenary = isFront
         ? -0.026 * Math.exp(-Math.pow(u * 2.2, 2.0)) * Math.sin(v * Math.PI)
         : 0.024 * Math.exp(-Math.pow(u * 2.0, 2.0)) * Math.sin(v * Math.PI);
 
       const dir = isFront ? 1.0 : -1.0;
-      const z = dir * (edgeArch * chestContour) + foldPrimary + foldSecondary + panelRipple + catenary;
+      const z = dir * (edgeArch * chestContour) + foldPrimary + catenary;
 
       return new THREE.Vector3(x, y, z);
     }
 
-    const segTheta = 128;
-    const segV = 84;
+    const segTheta = 72;
+    const segV = 48;
     const torsoPositions = [];
     const torsoUvs = [];
     const torsoIndices = [];
@@ -460,8 +479,8 @@
     group.add(torsoMesh);
 
     function buildSleeveGeometry(sideSign) {
-      const sU = 40;
-      const sV = 36;
+      const sU = 28;
+      const sV = 20;
       const positions = [];
       const uvs = [];
       const indices = [];
@@ -486,11 +505,10 @@
           const phi = (i / sU) * Math.PI * 2;
           const localY = Math.cos(phi) * radiusY;
           const localZ = Math.sin(phi) * radiusZ;
-          const crease = Math.sin(t * Math.PI * 2.0 + phi * 2.0) * 0.015 * t;
 
           const wx = spineX - localY * sinA;
           const wy = spineY + localY * cosA;
-          const wz = localZ + crease;
+          const wz = localZ;
 
           positions.push(wx, wy, wz);
           uvs.push(i / sU, t * 0.6);
@@ -526,71 +544,11 @@
     rightSleeve.receiveShadow = true;
     group.add(rightSleeve);
 
-    const collarSegs = 72;
-    const tubeSegs = 20;
-    const collarPos = [];
-    const collarUvs = [];
-    const collarIdx = [];
-    const tubeRadius = 0.068;
-
-    for (let i = 0; i <= collarSegs; i++) {
-      const theta = (i / collarSegs) * Math.PI * 2;
-      const u = Math.cos(theta) * 0.40;
-      const sinT = Math.sin(theta);
-
-      const frontNeck = evaluateTorsoPoint(u, 1.0, true);
-      const backNeck = evaluateTorsoPoint(u, 1.0, false);
-      const blend = sinT * 0.5 + 0.5;
-      const smooth = blend * blend * (3.0 - 2.0 * blend);
-
-      const cx = backNeck.x + (frontNeck.x - backNeck.x) * smooth;
-      const cy = backNeck.y + (frontNeck.y - backNeck.y) * smooth + 0.025;
-      const cz = (frontNeck.z * 0.72) * sinT;
-
-      const radDirX = Math.cos(theta);
-      const radDirZ = Math.sin(theta);
-
-      for (let j = 0; j <= tubeSegs; j++) {
-        const psi = (j / tubeSegs) * Math.PI * 2;
-        const cosP = Math.cos(psi);
-        const sinP = Math.sin(psi);
-
-        const px = cx + radDirX * cosP * tubeRadius * 0.85;
-        const py = cy + sinP * tubeRadius * 1.25;
-        const pz = cz + radDirZ * cosP * tubeRadius * 0.85;
-
-        collarPos.push(px, py, pz);
-        collarUvs.push((i / collarSegs) * 6.0, j / tubeSegs);
-      }
-    }
-
-    for (let i = 0; i < collarSegs; i++) {
-      for (let j = 0; j < tubeSegs; j++) {
-        const a = i * (tubeSegs + 1) + j;
-        const b = a + 1;
-        const c = (i + 1) * (tubeSegs + 1) + j;
-        const d = c + 1;
-        collarIdx.push(a, b, d, a, d, c);
-      }
-    }
-
-    const collarGeo = new THREE.BufferGeometry();
-    collarGeo.setIndex(collarIdx);
-    collarGeo.setAttribute('position', new THREE.Float32BufferAttribute(collarPos, 3));
-    collarGeo.setAttribute('uv', new THREE.Float32BufferAttribute(collarUvs, 2));
-    collarGeo.setAttribute('uv2', new THREE.Float32BufferAttribute(collarUvs, 2));
-    collarGeo.computeVertexNormals();
-
-    const collarMesh = new THREE.Mesh(collarGeo, collarMaterial);
-    collarMesh.castShadow = true;
-    collarMesh.receiveShadow = true;
-    group.add(collarMesh);
-
     return group;
   }
 
   /* ==========================================================================
-   * 5. PASS 2: GOLDEN-ANGLE BOKEH DOF + ACES FILMIC TONE MAPPING SHADER
+   * 6. PASS 2: 12-TAP BILINEAR GOLDEN-ANGLE BOKEH DOF + ACES FILMIC SHADER
    * ========================================================================== */
   const DOF_VERTEX_SHADER = `
     varying vec2 vUv;
@@ -624,7 +582,6 @@
       return clamp((diff - uFocalRange * 0.45) / (uFocalRange * 1.85), 0.0, 1.0);
     }
 
-    /* Narkowicz ACES Filmic Tone Mapping Curve (Prevents highlight blowout) */
     vec3 acesFilmicToneMap(vec3 x) {
       const float a = 2.51;
       const float b = 0.03;
@@ -636,7 +593,6 @@
 
     vec3 finishColor(vec3 linearHdr) {
       vec3 mapped = acesFilmicToneMap(linearHdr * uExposure);
-      /* Subtle studio vignette so edges frame the T-shirt naturally */
       float vig = 1.0 - smoothstep(0.45, 0.98, length(vUv - 0.5)) * 0.14;
       return mapped * vig;
     }
@@ -651,7 +607,7 @@
       float centerDepth = readLinearDepth(vUv);
       float centerCoC = computeCoC(centerDepth);
 
-      if (centerCoC < 0.015) {
+      if (centerCoC < 0.02) {
         gl_FragColor = vec4(finishColor(baseColor.rgb), 1.0);
         return;
       }
@@ -663,7 +619,7 @@
       vec3 accumColor = baseColor.rgb;
       float accumWeight = 1.0;
 
-      const int SAMPLES = 28;
+      const int SAMPLES = 12;
       const float GOLDEN_ANGLE = 2.39996323;
 
       for (int i = 1; i <= SAMPLES; i++) {
@@ -671,16 +627,13 @@
         float r = sqrt(fi / float(SAMPLES)) * blurRadius;
         float theta = fi * GOLDEN_ANGLE + hashAngle;
 
-        vec2 offset = vec2(cos(theta), sin(theta)) * r * texel;
-        vec2 sampleUv = clamp(vUv + offset, 0.001, 0.999);
-
+        vec2 sampleUv = clamp(vUv + vec2(cos(theta), sin(theta)) * r * texel, 0.001, 0.999);
         vec3 sColor = texture2D(tColor, sampleUv).rgb;
         float sDepth = readLinearDepth(sampleUv);
         float sCoC = computeCoC(sDepth);
 
-        /* Prevent foreground black T-shirt silhouette from bleeding into background blur */
         float depthGuard = (sDepth < centerDepth - 0.25) ? sCoC : 1.0;
-        float weight = max(sCoC, 0.15) * depthGuard;
+        float weight = max(sCoC, 0.2) * depthGuard;
 
         accumColor += sColor * weight;
         accumWeight += weight;
@@ -692,7 +645,7 @@
   `;
 
   /* ==========================================================================
-   * 6. SCENE INITIALIZATION, CSSOM BRIDGE, ONCLICK FLIP & DOF RENDER LOOP
+   * 7. SCENE INITIALIZATION, PARENT COLUMN SYNC & HIGH-RELIEF RENDER LOOP
    * ========================================================================== */
   async function initApp() {
     const rootEl = document.getElementById('carrd-app-root');
@@ -700,13 +653,16 @@
     if (!rootEl || !stageEl) return;
 
     try {
+      /* Link to parent Carrd column/embed container immediately */
+      const parentColumnEl = syncParentColumnLayout(rootEl);
+
       const THREE = await loadThreeAndLoaders();
       let cssTokens = readCssTokens(rootEl);
 
       const rect = stageEl.getBoundingClientRect();
-      const initW = Math.max(rect.width, 320);
+      const initW = Math.max(rect.width, 260);
       const initH = Math.max(rect.height, 320);
-      const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      const dpr = Math.min(window.devicePixelRatio || 1, 1.35);
 
       const renderer = new THREE.WebGLRenderer({
         antialias: true,
@@ -718,7 +674,6 @@
       renderer.setSize(initW, initH);
       renderer.shadowMap.enabled = true;
       renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-      /* Tone mapping is handled explicitly inside Pass 2 DOF_FRAGMENT_SHADER */
       renderer.toneMapping = THREE.NoToneMapping;
       stageEl.appendChild(renderer.domElement);
 
@@ -728,13 +683,17 @@
 
       const camera = new THREE.PerspectiveCamera(34, initW / initH, 0.5, 28);
 
-      /* 1. Synthesize Cotton Jersey Knit & Rough Plaster Textures */
       const maxAniso = Math.min(renderer.capabilities.getMaxAnisotropy(), 4);
-      const { normalMap: cottonNormalMap, roughnessMap: cottonRoughnessMap } = createCottonJerseyTextures(THREE, maxAniso);
+      const { normalMap: cottonNormalMap, roughnessMap: cottonRoughnessMap } = createCottonJerseyTextures(
+        THREE,
+        maxAniso,
+        cssTokens.knitRepeat
+      );
       const { normalMap: plasterNormalMap, roughnessMap: plasterRoughnessMap } = createRoughPlasterTextures(THREE, maxAniso);
       const emptyLogoTex = createEmptyFallbackTexture(THREE);
 
       const glbUrlAttr = (rootEl.getAttribute('data-glb-url') || '').trim();
+      const isPreNormalized = rootEl.getAttribute('data-glb-prenormalized') === 'true';
 
       const frontUrlAttr = (
         rootEl.getAttribute('data-logo-front') ||
@@ -778,29 +737,51 @@
         uBackTexel: { value: new THREE.Vector2(1.0 / 512.0, 1.0 / 512.0) },
         uPrintRoughness: { value: cssTokens.printRoughness },
         uPrintEmboss: { value: cssTokens.printEmboss },
-        uKnitBleedThrough: { value: cssTokens.knitBleed }
+        uKnitBleedThrough: { value: cssTokens.knitBleed },
+        uKnitCavity: { value: cssTokens.knitCavity },
+        uKnitRepeat: { value: cssTokens.knitRepeat }
       };
 
       function attachBaseCottonShader(material) {
         material.onBeforeCompile = (shader) => {
           shader.uniforms.uTime = shirtUniforms.uTime;
-          shader.vertexShader = 'uniform float uTime;\n' + shader.vertexShader;
+          shader.uniforms.uKnitCavity = shirtUniforms.uKnitCavity;
+          shader.vertexShader = `
+            uniform float uTime;
+            varying vec3 vRestPos;
+          \n` + shader.vertexShader;
           shader.vertexShader = shader.vertexShader.replace(
             '#include <begin_vertex>',
             `
             #include <begin_vertex>
+            vRestPos = position;
             float hemWeight = clamp((1.25 - position.y) * 0.38, 0.0, 1.0);
             float breeze = sin(uTime * 0.85 + position.x * 2.1 + position.y * 1.4) * 0.018 * hemWeight;
             transformed.z += breeze;
             transformed.x += cos(uTime * 0.65 + position.y * 1.8) * 0.006 * hemWeight;
             `
           );
+          shader.fragmentShader = `
+            uniform float uKnitCavity;
+            varying vec3 vRestPos;
+          \n` + shader.fragmentShader;
+          shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <map_fragment>',
+            `
+            #include <map_fragment>
+            /* 3D Rest-Position Micro-Knit Stitch Pore Cavity Shadow */
+            float wale = sin(vRestPos.x * 165.0 + abs(fract(vRestPos.x * 26.0) - 0.5) * 3.14);
+            float course = sin(vRestPos.y * 220.0);
+            float poreCavity = (wale * course) * 0.5 + 0.5;
+            diffuseColor.rgb *= mix(1.0 - uKnitCavity, 1.0 + uKnitCavity * 0.45, poreCavity);
+            `
+          );
           shader.fragmentShader = shader.fragmentShader.replace(
             '#include <dithering_fragment>',
             `
             vec3 viewDir = normalize(vViewPosition);
-            float fresnel = pow(1.0 - abs(dot(normal, viewDir)), 3.2);
-            gl_FragColor.rgb += vec3(0.10, 0.10, 0.09) * fresnel;
+            float fresnel = pow(1.0 - abs(dot(normal, viewDir)), 2.8);
+            gl_FragColor.rgb += vec3(0.13, 0.13, 0.12) * fresnel;
             #include <dithering_fragment>
             `
           );
@@ -812,7 +793,7 @@
         roughness: cssTokens.shirtRoughness,
         metalness: 0.03,
         normalMap: cottonNormalMap,
-        normalScale: new THREE.Vector2(0.62, 0.62),
+        normalScale: new THREE.Vector2(cssTokens.shirtBump, cssTokens.shirtBump),
         roughnessMap: cottonRoughnessMap,
         side: THREE.DoubleSide,
         shadowSide: THREE.FrontSide
@@ -835,12 +816,15 @@
           varying float vBackMask;
           varying vec3 vDecalTangent;
           varying vec3 vDecalBitangent;
+          varying vec3 vRestPos;
         \n` + shader.vertexShader;
 
         shader.vertexShader = shader.vertexShader.replace(
           '#include <begin_vertex>',
           `
           #include <begin_vertex>
+          vRestPos = position;
+
           vFrontLogoUv = vec2(
             (position.x - uFrontOffset.x) / max(uFrontScale.x, 0.001) + 0.5,
             (position.y - uFrontOffset.y) / max(uFrontScale.y, 0.001) + 0.5
@@ -876,18 +860,31 @@
           uniform float uPrintRoughness;
           uniform float uPrintEmboss;
           uniform float uKnitBleedThrough;
+          uniform float uKnitCavity;
           varying vec2 vFrontLogoUv;
           varying vec2 vBackLogoUv;
           varying float vFrontMask;
           varying float vBackMask;
           varying vec3 vDecalTangent;
           varying vec3 vDecalBitangent;
+          varying vec3 vRestPos;
         \n` + shader.fragmentShader;
 
+        /* 1. High-Contrast 3D Knit Stitch Pore Cavity + Front/Back Decal Composite */
         shader.fragmentShader = shader.fragmentShader.replace(
           '#include <map_fragment>',
           `
           #include <map_fragment>
+          /* Evaluate physical stockinette stitch pores from 3D rest coordinates so even
+           * stretched .glb UVs exhibit razor-sharp heavyweight cotton weave texture */
+          float waleFreq = vRestPos.x * 165.0;
+          float chev = abs(fract(vRestPos.x * 26.26) - 0.5) * 3.2;
+          float courseFreq = vRestPos.y * 220.0 + chev;
+          float knitCrown = sin(waleFreq) * sin(courseFreq);
+          float poreCavity = knitCrown * 0.5 + 0.5;
+
+          diffuseColor.rgb *= mix(1.0 - uKnitCavity, 1.0 + uKnitCavity * 0.48, poreCavity);
+
           float decalPrintAlpha = 0.0;
           bool isFrontDecalActive = false;
           bool isBackDecalActive = false;
@@ -914,6 +911,8 @@
           '#include <roughnessmap_fragment>',
           `
           #include <roughnessmap_fragment>
+          /* Modulate cotton roughness across stitch crowns vs valleys */
+          roughnessFactor = clamp(roughnessFactor - knitCrown * 0.12, 0.35, 0.98);
           if (decalPrintAlpha > 0.001) {
             float knitMicroVariance = (roughnessFactor - roughness) * uKnitBleedThrough;
             float inkRoughness = clamp(uPrintRoughness + knitMicroVariance, 0.18, 0.92);
@@ -922,11 +921,18 @@
           `
         );
 
+        /* 2. Inject 3D Rest-Pose Micro-Knit Normal Perturbation + Ink-Edge Bevel */
         shader.fragmentShader = shader.fragmentShader.replace(
           '#include <normal_fragment_maps>',
           `
           vec3 baseGeoNormal = normal;
           #include <normal_fragment_maps>
+
+          /* Reinforce UV normalMap with 3D rest-space stockinette stitch normals */
+          float microNx = cos(waleFreq) * 0.24;
+          float microNy = cos(courseFreq) * 0.26;
+          normal = normalize(normal + vDecalTangent * microNx + vDecalBitangent * microNy);
+
           if (isFrontDecalActive || isBackDecalActive) {
             vec3 inkKnitNormal = normalize(mix(baseGeoNormal, normal, uKnitBleedThrough));
             normal = normalize(mix(normal, inkKnitNormal, decalPrintAlpha));
@@ -965,8 +971,8 @@
           '#include <dithering_fragment>',
           `
           vec3 viewDir = normalize(vViewPosition);
-          float fresnel = pow(1.0 - abs(dot(normal, viewDir)), 3.2);
-          vec3 cottonSheen = vec3(0.10, 0.10, 0.09) * fresnel * (1.0 - decalPrintAlpha * 0.78);
+          float fresnel = pow(1.0 - abs(dot(normal, viewDir)), 2.8);
+          vec3 cottonSheen = vec3(0.13, 0.13, 0.12) * fresnel * (1.0 - decalPrintAlpha * 0.78);
           gl_FragColor.rgb += cottonSheen;
           #include <dithering_fragment>
           `
@@ -978,7 +984,7 @@
         roughness: cssTokens.shirtRoughness,
         metalness: 0.03,
         normalMap: cottonNormalMap,
-        normalScale: new THREE.Vector2(0.62, 0.62),
+        normalScale: new THREE.Vector2(cssTokens.shirtBump, cssTokens.shirtBump),
         roughnessMap: cottonRoughnessMap,
         side: THREE.DoubleSide,
         shadowSide: THREE.FrontSide
@@ -986,14 +992,21 @@
       attachBaseCottonShader(sleeveMaterial);
       trackedFabricMaterials.push(sleeveMaterial);
 
-      const collarMaterial = sleeveMaterial.clone();
-      collarMaterial.normalScale = new THREE.Vector2(0.88, 0.88);
-      attachBaseCottonShader(collarMaterial);
-      trackedFabricMaterials.push(collarMaterial);
-
-      /* 2. Asynchronous Front & Back PNG Loader */
       const textureLoader = new THREE.TextureLoader();
       textureLoader.setCrossOrigin('anonymous');
+
+      if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+        const upgradeSwTex = (url, targetTex) => {
+          textureLoader.load(url, (loaded) => {
+            targetTex.image = loaded.image;
+            targetTex.needsUpdate = true;
+          });
+        };
+        upgradeSwTex('/__sw-tex/cotton-normal-v3.png', cottonNormalMap);
+        upgradeSwTex('/__sw-tex/cotton-rough-v3.png', cottonRoughnessMap);
+        upgradeSwTex('/__sw-tex/plaster-normal-v3.png', plasterNormalMap);
+        upgradeSwTex('/__sw-tex/plaster-rough-v3.png', plasterRoughnessMap);
+      }
 
       function loadDecalSide(side, url, options = {}) {
         const isFront = side === 'front';
@@ -1055,7 +1068,7 @@
         });
       }
 
-      /* 3. Mount Procedural T-Shirt Immediately on Frame 1, then Swap in .GLB When Ready */
+      /* 3. Mount Fallback Immediately, Swap in .GLB When Ready */
       const tshirtPivotGroup = new THREE.Group();
       tshirtPivotGroup.position.set(0, -0.05, 0.0);
       scene.add(tshirtPivotGroup);
@@ -1070,8 +1083,7 @@
         tshirtPivotGroup.add(node);
       }
 
-      /* Mount instant procedural garment first so viewport is never blank while .glb downloads */
-      const initialFallback = buildProceduralFallbackTShirt(THREE, torsoMaterial, sleeveMaterial, collarMaterial);
+      const initialFallback = buildProceduralFallbackTShirt(THREE, torsoMaterial, sleeveMaterial);
       mountGarmentNode(initialFallback);
 
       function loadTShirtGlbModel(glbUrl) {
@@ -1098,7 +1110,8 @@
                   gltf.scene,
                   torsoMaterial,
                   cssTokens.aoIntensity,
-                  trackedFabricMaterials
+                  trackedFabricMaterials,
+                  isPreNormalized
                 );
                 mountGarmentNode(normalizedGlb);
                 dracoLoader.dispose();
@@ -1118,12 +1131,11 @@
         });
       }
 
-      /* Load .glb asynchronously in background without blocking initial render */
       if (glbUrlAttr) {
         loadTShirtGlbModel(glbUrlAttr);
       }
 
-      /* 4. Interactive onClick 180° T-Shirt Flip + CSSOM Web Animations API Feedback */
+      /* 4. Interactive onClick 180° T-Shirt Flip */
       let turnStepIndex = 0;
       let targetTurnAngle = 0.0;
       let currentTurnAngle = 0.0;
@@ -1182,7 +1194,7 @@
         }
       });
 
-      /* 5. Rough Off-White Plaster Architectural Room (Back Wall & Floor) */
+      /* 5. Rough Off-White Plaster Architectural Room */
       const plasterWallMaterial = new THREE.MeshStandardMaterial({
         color: new THREE.Color(cssTokens.wallColor),
         roughness: cssTokens.wallRoughness,
@@ -1203,7 +1215,7 @@
       floorPlane.receiveShadow = true;
       scene.add(floorPlane);
 
-      /* 6. Normalized Morning Sunlight & Studio Fill Rig (Three.js r128 Scale) */
+      /* 6. Normalized Studio Lighting Rig */
       const morningHemiLight = new THREE.HemisphereLight(0xf4f7fb, 0x8c867a, cssTokens.hemiIntensity);
       scene.add(morningHemiLight);
 
@@ -1221,8 +1233,8 @@
       morningSunSpot.castShadow = true;
       morningSunSpot.shadow.mapSize.width = 1024;
       morningSunSpot.shadow.mapSize.height = 1024;
-      morningSunSpot.shadow.camera.near = 2.0;
-      morningSunSpot.shadow.camera.far = 20.0;
+      morningSunSpot.shadow.camera.near = 2.5;
+      morningSunSpot.shadow.camera.far = 16.0;
       morningSunSpot.shadow.bias = -0.0006;
       morningSunSpot.shadow.normalBias = 0.025;
       scene.add(morningSunSpot);
@@ -1235,13 +1247,7 @@
       skyRimSpot.penumbra = 0.58;
       skyRimSpot.decay = 1.3;
       skyRimSpot.distance = 26;
-      skyRimSpot.castShadow = true;
-      skyRimSpot.shadow.mapSize.width = 1024;
-      skyRimSpot.shadow.mapSize.height = 1024;
-      skyRimSpot.shadow.camera.near = 2.0;
-      skyRimSpot.shadow.camera.far = 20.0;
-      skyRimSpot.shadow.bias = -0.0006;
-      skyRimSpot.shadow.normalBias = 0.025;
+      skyRimSpot.castShadow = false;
       scene.add(skyRimSpot);
       scene.add(skyRimSpot.target);
 
@@ -1257,7 +1263,7 @@
       goboGroup.lookAt(morningSunSpot.position);
       scene.add(goboGroup);
 
-      /* 7. Hardware DepthTexture FBO & Bokeh Depth-of-Field Post-Processing Setup */
+      /* 7. Hardware DepthTexture FBO & 12-Tap Bokeh Depth-of-Field Pass */
       const rtW = Math.floor(initW * dpr);
       const rtH = Math.floor(initH * dpr);
 
@@ -1309,9 +1315,15 @@
         scene.background.set(cssTokens.bgStage);
         scene.fog.color.set(cssTokens.bgStage);
 
+        const repX = cssTokens.knitRepeat;
+        const repY = Math.round(repX * 1.18);
+        cottonNormalMap.repeat.set(repX, repY);
+        cottonRoughnessMap.repeat.set(repX, repY);
+
         trackedFabricMaterials.forEach((mat) => {
           mat.color.set(cssTokens.shirtColor);
           mat.roughness = cssTokens.shirtRoughness;
+          mat.normalScale.set(cssTokens.shirtBump, cssTokens.shirtBump);
           if (mat.aoMap) {
             mat.aoMapIntensity = cssTokens.aoIntensity;
           }
@@ -1331,6 +1343,8 @@
         shirtUniforms.uPrintRoughness.value = cssTokens.printRoughness;
         shirtUniforms.uPrintEmboss.value = cssTokens.printEmboss;
         shirtUniforms.uKnitBleedThrough.value = cssTokens.knitBleed;
+        shirtUniforms.uKnitCavity.value = cssTokens.knitCavity;
+        shirtUniforms.uKnitRepeat.value = cssTokens.knitRepeat;
 
         dofUniforms.uFocalRange.value = cssTokens.focalRange;
         dofUniforms.uMaxBlurPx.value = cssTokens.dofBlur * curDpr;
@@ -1363,37 +1377,47 @@
         loadDecalSide(opts.side === 'back' ? 'back' : 'front', url, opts);
       };
 
-      /* 9. Responsive Viewport & DoF FBO Resizing */
+      /* 9. Bi-Directional (Horizontal + Vertical) Parent-Column Camera Fitter */
       let baseCamZ = 6.2;
       function updateViewportSize(width, height) {
         const aspect = width / Math.max(height, 1);
         camera.aspect = aspect;
         camera.updateProjectionMatrix();
 
-        const targetSpan = 3.9;
+        /* Fit both the 3.85-unit sleeve width AND 3.55-unit collar-to-hem height
+         * so the T-shirt fits any narrow, square, or wide Carrd column cleanly */
+        const targetSpanWidth = 3.85;
+        const targetSpanHeight = 3.55;
         const vFovRad = (camera.fov * Math.PI) / 180;
-        const requiredZ = (targetSpan / aspect) / (2 * Math.tan(vFovRad / 2));
-        baseCamZ = Math.max(5.6, Math.min(requiredZ, 9.8));
+        const tanHalfFov = Math.tan(vFovRad / 2);
+
+        const reqZWidth = (targetSpanWidth / aspect) / (2 * tanHalfFov);
+        const reqZHeight = targetSpanHeight / (2 * tanHalfFov);
+
+        baseCamZ = Math.max(5.5, Math.min(Math.max(reqZWidth, reqZHeight), 11.5));
       }
 
       updateViewportSize(initW, initH);
 
-      const resizeObserver = new ResizeObserver((entries) => {
-        for (const entry of entries) {
-          const { width, height } = entry.contentRect;
-          if (width > 0 && height > 0) {
-            const curDpr = Math.min(window.devicePixelRatio || 1, 1.5);
-            const wPx = Math.floor(width * curDpr);
-            const hPx = Math.floor(height * curDpr);
-            renderer.setSize(width, height);
-            renderTarget.setSize(wPx, hPx);
-            dofUniforms.uResolution.value.set(wPx, hPx);
-            dofUniforms.uMaxBlurPx.value = cssTokens.dofBlur * curDpr;
-            updateViewportSize(width, height);
-          }
+      const resizeObserver = new ResizeObserver(() => {
+        const bounds = stageEl.getBoundingClientRect();
+        const width = Math.floor(bounds.width);
+        const height = Math.floor(bounds.height);
+        if (width > 0 && height > 0) {
+          const curDpr = Math.min(window.devicePixelRatio || 1, 1.35);
+          const wPx = Math.floor(width * curDpr);
+          const hPx = Math.floor(height * curDpr);
+          renderer.setSize(width, height);
+          renderTarget.setSize(wPx, hPx);
+          dofUniforms.uResolution.value.set(wPx, hPx);
+          dofUniforms.uMaxBlurPx.value = cssTokens.dofBlur * curDpr;
+          updateViewportSize(width, height);
         }
       });
       resizeObserver.observe(stageEl);
+      if (parentColumnEl) {
+        resizeObserver.observe(parentColumnEl);
+      }
 
       /* 10. Performance Guard */
       let isVisible = true;
@@ -1406,7 +1430,7 @@
         isVisible = document.visibilityState === 'visible';
       });
 
-      /* 11. Reveal Stage Immediately & Start 60fps Loop */
+      /* 11. Reveal Stage & Start 60fps Loop */
       rootEl.setAttribute('data-state', 'ready');
       const clock = new THREE.Clock();
       const focalTargetPoint = new THREE.Vector3();
@@ -1444,17 +1468,17 @@
         tshirtPivotGroup.rotation.z = Math.sin(t * 0.21) * 0.01 + turnTiltZ;
         tshirtPivotGroup.position.y = -0.05 + Math.sin(t * 0.42) * 0.03;
 
-        const orbitAngle = Math.sin(t * 0.18) * 0.26 + frontPhase * 0.10;
-        const radiusZ = baseCamZ - frontPhase * 0.32 + Math.cos(t * 0.16) * 0.22;
+        const orbitAngle = Math.sin(t * 0.18) * 0.24 + frontPhase * 0.10;
+        const radiusZ = baseCamZ - frontPhase * 0.28 + Math.cos(t * 0.16) * 0.18;
 
-        const camX = Math.sin(orbitAngle) * radiusZ * 0.45;
-        const camY = (0.16 * frontPhase + 0.04 * backPhase) + Math.sin(t * 0.15) * 0.18;
+        const camX = Math.sin(orbitAngle) * radiusZ * 0.42;
+        const camY = (0.14 * frontPhase + 0.04 * backPhase) + Math.sin(t * 0.15) * 0.15;
         const camZ = Math.cos(orbitAngle) * radiusZ;
 
         camera.position.set(camX, camY, camZ);
 
-        const lookX = frontPhase * 0.14 + Math.sin(t * 0.14) * 0.06;
-        const lookY = frontPhase * 0.16 + backPhase * 0.04 + Math.cos(t * 0.17) * 0.05;
+        const lookX = frontPhase * 0.12 + Math.sin(t * 0.14) * 0.05;
+        const lookY = frontPhase * 0.14 + backPhase * 0.04 + Math.cos(t * 0.17) * 0.05;
         focalTargetPoint.set(lookX, lookY, 0.08);
         camera.lookAt(focalTargetPoint);
 
