@@ -104,7 +104,7 @@
       shirtBump:      num('--ts-shirt-bump', 1.65),
       collarBump:     num('--ts-collar-bump', 2.25),
       knitRepeat:     num('--ts-knit-repeat', 36.0),
-      knitCavity:     num('--ts-knit-cavity', 0.34),
+      knitCavity:     num('--ts-knit-cavity', 0.05),
       wallColor:      str('--ts-wall-color', '#e4e1d8'),
       wallRoughness:  num('--ts-wall-roughness', 0.95),
       wallBump:       num('--ts-wall-bump', 1.95),
