@@ -1,14 +1,84 @@
 /* ==========================================================================
  * kr10o/carrd-threejs - style.css
  * Served via: https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/style.css
- * Locked 100vw x 100vh Hero Background | Dark Grey/Black Outer | Squircle View
+ * Normalized Studio Lightness | Soft Charcoal-Black Tee | Warm Plaster Stage
  * ========================================================================== */
 
+@property --ts-turn-progress {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --ts-turn-velocity {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 0;
+}
+
+@property --ts-cursor-x {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+
+@property --ts-cursor-y {
+  syntax: "<percentage>";
+  inherits: true;
+  initial-value: 50%;
+}
+
+@property --ts-dof-blur {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 14;
+}
+
+@property --ts-exposure {
+  syntax: "<number>";
+  inherits: true;
+  initial-value: 1.02;
+}
+
 #carrd-app-root.tshirt-hero-bg {
-  --bg-void: #0b0c10;
-  --bg-stage: #e8e6e1;
-  --squircle-radius: clamp(28px, 4.2vw, 56px);
-  --frame-pad: clamp(10px, 1.4vw, 20px);
+  /* --- 1. Viewport & Squircle Frame Tokens --- */
+  --ts-bg-void: #0b0c10;
+  --ts-bg-stage: #dfdcd4;
+  --ts-squircle-radius: clamp(28px, 4.2vw, 56px);
+  --ts-frame-pad: clamp(10px, 1.4vw, 20px);
+  --ts-frame-border-width: 1px;
+  --ts-frame-border-color: rgba(255, 255, 255, 0.16);
+  --ts-frame-shadow: 0 28px 80px rgba(0, 0, 0, 0.90);
+  --ts-frame-inset-glow: inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  --ts-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ts-reveal-duration: 0.65s;
+
+  /* --- 2. Normalized WebGL Lighting & Material Tokens (Three.js r128 Scale) --- */
+  --ts-shirt-color: #1e2026;
+  --ts-shirt-roughness: 0.82;
+  --ts-wall-color: #e4e1d8;
+  --ts-wall-roughness: 0.95;
+  --ts-wall-bump: 1.95;
+  --ts-sun-color: #ffe8c2;
+  --ts-sun-intensity: 1.35;
+  --ts-rim-color: #dcebff;
+  --ts-rim-intensity: 0.75;
+  --ts-hemi-intensity: 0.55;
+  --ts-fill-intensity: 0.42;
+  --ts-exposure: 1.02;
+  --ts-dof-blur: 14;
+  --ts-focal-range: 0.65;
+  --ts-ao-intensity: 1.10;
+  --ts-print-roughness: 0.40;
+  --ts-print-emboss: 0.98;
+  --ts-knit-bleed: 0.64;
+
+  /* --- 3. Live CSSOM Telemetry Tokens --- */
+  --ts-turn-progress: 0;
+  --ts-turn-velocity: 0;
+  --ts-cursor-x: 50%;
+  --ts-cursor-y: 50%;
+
   position: relative;
   width: 100vw;
   height: 100vh;
@@ -18,8 +88,8 @@
   max-height: 100vh;
   margin-left: calc(50% - 50vw);
   margin-right: calc(50% - 50vw);
-  padding: var(--frame-pad);
-  background-color: var(--bg-void);
+  padding: var(--ts-frame-pad);
+  background-color: var(--ts-bg-void);
   overflow: hidden;
   user-select: none;
   -webkit-user-select: none;
@@ -39,16 +109,42 @@
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: var(--bg-stage);
-  border-radius: var(--squircle-radius);
+  background-color: var(--ts-bg-stage);
+  border-radius: var(--ts-squircle-radius);
   corner-shape: squircle;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow:
-    0 28px 80px rgba(0, 0, 0, 0.90),
-    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+  border: var(--ts-frame-border-width) solid var(--ts-frame-border-color);
+  box-shadow: var(--ts-frame-shadow), var(--ts-frame-inset-glow);
   overflow: hidden;
   contain: strict;
   transform: translateZ(0);
+  transition:
+    border-color 0.45s var(--ts-ease-out),
+    box-shadow 0.45s var(--ts-ease-out);
+}
+
+#carrd-app-root[data-turning="true"] .tshirt-squircle-frame {
+  border-color: rgba(255, 232, 194, 0.42);
+}
+
+#carrd-app-root .tshirt-squircle-frame::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 3;
+  background: radial-gradient(
+    650px circle at var(--ts-cursor-x) var(--ts-cursor-y),
+    rgba(255, 255, 255, 0.06) 0%,
+    transparent 65%
+  );
+  box-shadow: inset 0 0 0 1px rgba(
+    255,
+    255,
+    255,
+    calc(0.08 + var(--ts-turn-velocity) * 0.35)
+  );
+  transition: opacity 0.35s var(--ts-ease-out);
 }
 
 #carrd-app-root .tshirt-canvas-stage {
@@ -56,12 +152,14 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  z-index: 2;
   opacity: 0;
   pointer-events: auto;
   cursor: pointer;
   outline: none;
   -webkit-tap-highlight-color: transparent;
-  transition: opacity 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: transform, opacity;
+  transition: opacity var(--ts-reveal-duration) var(--ts-ease-out);
 }
 
 #carrd-app-root[data-state="ready"] .tshirt-canvas-stage {
@@ -73,4 +171,10 @@
   width: 100% !important;
   height: 100% !important;
   outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #carrd-app-root.tshirt-hero-bg {
+    --ts-dof-blur: 10;
+  }
 }
