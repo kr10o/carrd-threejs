@@ -1,9 +1,3 @@
- /* ==========================================================================
-  * kr10o/carrd-threejs - script.js
-  * Served via: https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/script.js
-  * Features:
-  *   - PURGE CACHE.ps1: Invoke-RestMethod "https://purge.jsdelivr.net/gh/kr10o/carrd-threejs@main/tshirt.glb"; Invoke-RestMethod "https://purge.jsdelivr.net/gh/kr10o/carrd-threejs@main/script.js"; Invoke-RestMethod "https://purge.jsdelivr.net/gh/kr10o/carrd-threejs@main/style.css";
-  * ========================================================================== */
   (function () {
     'use strict';
 
