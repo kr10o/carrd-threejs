@@ -3,7 +3,6 @@
   class="tshirt-hero-bg"
   data-state="loading"
   data-glb-url="https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/tshirt.glb"
-  data-glb-hanger="auto"
   data-logo-front="https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/logo-front.png"
   data-logo-front-scale="0.34"
   data-logo-front-x="0.42"
@@ -12,10 +11,16 @@
   data-logo-back-scale="1.18"
   data-logo-back-x="0.0"
   data-logo-back-y="0.18"
-  aria-hidden="true"
 >
   <div class="tshirt-squircle-frame">
-    <div id="tshirt-canvas-stage" class="tshirt-canvas-stage"></div>
+    <div
+      id="tshirt-canvas-stage"
+      class="tshirt-canvas-stage"
+      role="button"
+      tabindex="0"
+      aria-label="Click to rotate T-shirt 180 degrees between front and back print"
+      title="Click to rotate T-Shirt (Front / Back)"
+    ></div>
   </div>
 </div>
 
