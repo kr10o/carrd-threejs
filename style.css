@@ -64,9 +64,9 @@
   /* --- 2. High-Relief Cotton Texture & Studio Lighting Tokens --- */
   --ts-shirt-color: #f5f5f5;
   --ts-shirt-roughness: 0.54;
-  --ts-shirt-bump: 0.15;        /* Boosted 2.6x for deep heavyweight jersey relief */
-  --ts-collar-bump: 0.09;       /* Deep 1x1 rib collar texture */
-  --ts-knit-repeat: 160;         /* Tighter, sharper knit loop density */
+  --ts-shirt-bump: 0.09;        /* Boosted 2.6x for deep heavyweight jersey relief */
+  --ts-collar-bump: 0.05;       /* Deep 1x1 rib collar texture */
+  --ts-knit-repeat: 260;         /* Tighter, sharper knit loop density */
   --ts-knit-cavity: 0.006;       /* Micro-shadow depth inside knit stitch pores */
   --ts-wall-color: #e4e1d8;
   --ts-wall-roughness: 3.5;
@@ -82,8 +82,8 @@
   --ts-focal-range: 0.55;
   --ts-ao-intensity: 1.25;
   --ts-print-roughness: 0.30;
-  --ts-print-emboss: 0.50;
-  --ts-knit-bleed: 0.72;
+  --ts-print-emboss: 0.10;
+  --ts-knit-bleed: 0.12;
 
   /* --- 3. Live CSSOM Telemetry Tokens --- */
   --ts-turn-progress: 0;
