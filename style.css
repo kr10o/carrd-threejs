@@ -75,13 +75,13 @@
   --ts-sun-intensity: 0.65;
   --ts-rim-color: #dcebff;
   --ts-rim-intensity: 0.62;
-  --ts-hemi-intensity: 0.52;
+  --ts-hemi-intensity: 0.32;
   --ts-fill-intensity: 0.10;
   --ts-exposure: 1;
-  --ts-dof-blur: 6;
-  --ts-focal-range: 0.55;
-  --ts-ao-intensity: 1.25;
-  --ts-print-roughness: 0.30;
+  --ts-dof-blur: 8;
+  --ts-focal-range: 0.65;
+  --ts-ao-intensity: 1;
+  --ts-print-roughness: 0.3;
   --ts-print-emboss: 0.10;
   --ts-knit-bleed: 0.12;
 
@@ -205,4 +205,12 @@
     --ts-min-height: 300px;
     --ts-dof-blur: 6;
   }
+}
+
+#carrd-app-root.tshirt-hero-bg:not([data-layout="fullscreen"]) {
+  height: auto;
+  min-height: 0;
+  max-height: 100vh;
+  max-height: 100dvh;
+  aspect-ratio: var(--ts-aspect-ratio);
 }
