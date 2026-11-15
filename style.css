@@ -63,27 +63,27 @@
 
   /* --- 2. High-Relief Cotton Texture & Studio Lighting Tokens --- */
   --ts-shirt-color: #f5f5f5;
-  --ts-shirt-roughness: 0.54;
-  --ts-shirt-bump: 0.09;        /* Boosted 2.6x for deep heavyweight jersey relief */
-  --ts-collar-bump: 0.05;       /* Deep 1x1 rib collar texture */
-  --ts-knit-repeat: 260;         /* Tighter, sharper knit loop density */
-  --ts-knit-cavity: 0.006;       /* Micro-shadow depth inside knit stitch pores */
+  --ts-shirt-roughness: 0.4;
+  --ts-shirt-bump: 0.01;        /* Boosted 2.6x for deep heavyweight jersey relief */
+  --ts-collar-bump: 0.02;       /* Deep 1x1 rib collar texture */
+  --ts-knit-repeat: 289;         /* Tighter, sharper knit loop density */
+  --ts-knit-cavity: 0.002;       /* Micro-shadow depth inside knit stitch pores */
   --ts-wall-color: #e4e1d8;
   --ts-wall-roughness: 3.5;
   --ts-wall-bump: 0.35;
-  --ts-sun-color: #ffe8c2;
-  --ts-sun-intensity: 0.65;
+  --ts-sun-color: #ffeff2;
+  --ts-sun-intensity: 0.9;
   --ts-rim-color: #dcebff;
   --ts-rim-intensity: 0.62;
   --ts-hemi-intensity: 0.32;
   --ts-fill-intensity: 0.10;
   --ts-exposure: 1;
-  --ts-dof-blur: 8;
-  --ts-focal-range: 0.65;
-  --ts-ao-intensity: 1;
-  --ts-print-roughness: 0.3;
-  --ts-print-emboss: 0.10;
-  --ts-knit-bleed: 0.12;
+  --ts-dof-blur: 11;
+  --ts-focal-range: 0.5;
+  --ts-ao-intensity: 0,5;
+  --ts-print-roughness: 0.1;
+  --ts-print-emboss: 0.5;
+  --ts-knit-bleed: 0.02;
 
   /* --- 3. Live CSSOM Telemetry Tokens --- */
   --ts-turn-progress: 0;
