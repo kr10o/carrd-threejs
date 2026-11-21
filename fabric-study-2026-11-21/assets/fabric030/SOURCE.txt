@@ -1,0 +1,14 @@
+Material: ambientCG Fabric 030
+Source: https://ambientcg.com/view?id=Fabric030
+Download: https://ambientcg.com/get?file=Fabric030_1K-JPG.zip
+License: CC0 (https://docs.ambientcg.com/license/)
+Downloaded: 2026-11-21
+Creator's technique classification: Approximation (not a claimed photographic scan).
+
+Runtime maps: Color (sRGB), NormalGL (linear), Roughness (linear).
+OpenGL normals, flipY=false for glTF UVs, repeat wrapping.
+AO and displacement are retained in the source archive but not applied as extra
+micro-occlusion or geometric displacement. Original model AO is preserved only
+if actually provided as aoMap; base colour is not repurposed as AO.
+Procedural micro-relief/cavity is disabled in the PBR stylesheet override.
+All ten appearance choices share these fabric maps; their roughness differs.

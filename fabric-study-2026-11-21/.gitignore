@@ -1,0 +1,11 @@
+# Retain downloaded source package locally; publish only runtime maps + provenance.
+assets/fabric030/*.zip
+assets/fabric030/*.blend
+assets/fabric030/*.mtlx
+assets/fabric030/*.tres
+assets/fabric030/*.usdc
+assets/fabric030/*_AmbientOcclusion.jpg
+assets/fabric030/*_Displacement.jpg
+assets/fabric030/*_NormalDX.jpg
+assets/fabric030/Fabric030.png
+__pycache__/

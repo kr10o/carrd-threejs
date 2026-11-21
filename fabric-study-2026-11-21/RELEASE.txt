@@ -1,0 +1,28 @@
+Fabric PBR preview — 2026-11-21
+
+Published in this subfolder; repository-root assets retain the prior version.
+Previous main: e90ce5a45105ac0042c0b5863e6b8f60c4ff6fce
+Archive branch: archive/pre-fabric-pbr-2026-11-21
+
+Carrd asset URLs:
+https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/fabric-study-2026-11-21/style.css
+https://cdn.jsdelivr.net/gh/kr10o/carrd-threejs@main/fabric-study-2026-11-21/script.js
+
+Keep the original tshirt.glb URL. Replace the previous CSS/JS references rather
+than loading both versions. PBR image URLs resolve relative to the new script.
+
+Current behavior:
+- ambientCG Fabric030 color, OpenGL normal and roughness maps; CC0 source recorded.
+- Charcoal-grey textured fabric; procedural micro-relief disabled.
+- Stronger rear rim, main, ambient and fill lights; beam shadow strength 18%.
+- Frame-rate-independent 180-degree click turn, lift/tilt and stable landing.
+- Ten appearance controls now share the PBR maps; roughness remains variable.
+
+Verification: browser loaded PBR maps and rendered the model without console
+errors; click flipped to back and settled; JavaScript syntax passes.
+Original root files are unchanged. Geometry decimation, half-resolution DoF,
+print editor and zoom remain design proposals in technical-breakdown.html.
+Size L calibration assumption: 55 cm flat bottom hem; 30x40 cm print design.
+
+The technical breakdown documents the initial study; this release note records
+the subsequent PBR, lighting and animation changes.

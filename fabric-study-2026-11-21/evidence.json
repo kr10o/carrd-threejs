@@ -1,0 +1,12 @@
+{
+  "baseline": "e90ce5a45105ac0042c0b5863e6b8f60c4ff6fce",
+  "triangles": 373280,
+  "vertices": 199600,
+  "glbBytes": 933304,
+  "originalSha256": {
+    "script.js": "dda3cd12f7b67a44746740a6b78f21f1dc2309ac76c954d644c245585cf3dd24",
+    "style.css": "4b6c77466c75fdc1beedaa4b824d69201c94edca4a22c37ec9ab46400d89cf11",
+    "tshirt.glb": "addf5dba9a58308ed324c7490a3b693204a37b860e6be63926b662cf0cefe07b"
+  },
+  "presetCount": 10
+}
